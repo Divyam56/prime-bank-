@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx --test src/utils/*.test.ts"
+    "test": "tsx --test src/utils/*.test.ts",
+    "test:java": "mvn test",
+    "build:java": "mvn clean package -DskipTests",
+    "start:java": "PORT=8085 java -jar target/online-banking-system.jar"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
