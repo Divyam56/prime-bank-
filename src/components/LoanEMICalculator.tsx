@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { 
   Calculator, Percent, Calendar, DollarSign, TrendingUp, 
   Sparkles, ChevronDown, ChevronUp, Check, Info, ArrowRight,
-  ShieldCheck, HelpCircle, Landmark, BarChart3, ArrowDownRight, Layers
+  ShieldCheck, HelpCircle, Landmark, BarChart3, ArrowDownRight, 
+  Download, Table, Search, Filter, CheckCircle2
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -37,9 +38,11 @@ export const LoanEMICalculator: React.FC<LoanEMICalculatorProps> = ({
   const [tenureMonths, setTenureMonths] = useState<number>(24);
   const [calcMethod, setCalcMethod] = useState<EMICalculationMethod>('REDUCING');
   const [selectedPreset, setSelectedPreset] = useState<string>('retail');
-  const [showAmortization, setShowAmortization] = useState<boolean>(false);
-  const [amortizationMonthsToShow, setAmortizationMonthsToShow] = useState<number>(12);
   const [chartViewMode, setChartViewMode] = useState<'all' | 'milestones'>('milestones');
+  
+  // Amortization Table Filters
+  const [tableFilterYear, setTableFilterYear] = useState<number | 'ALL'>('ALL');
+  const [searchMonth, setSearchMonth] = useState<string>('');
 
   // Compute EMI and breakdowns reactively
   const calculation = useMemo(() => {
@@ -52,6 +55,7 @@ export const LoanEMICalculator: React.FC<LoanEMICalculatorProps> = ({
     setPrincipal(preset.defaultPrincipal);
     setTenureMonths(preset.defaultTenure);
     setAnnualRate(preset.defaultRate);
+    setTableFilterYear('ALL');
   };
 
   // Convert tenure months to human readable text
@@ -62,6 +66,80 @@ export const LoanEMICalculator: React.FC<LoanEMICalculatorProps> = ({
     if (months === 0) return `${years} ${years === 1 ? 'Year' : 'Years'}`;
     return `${years} ${years === 1 ? 'Yr' : 'Yrs'} ${months} Mos`;
   }, [tenureMonths]);
+
+  // Total years in tenure
+  const totalYears = useMemo(() => {
+    return Math.ceil(tenureMonths / 12);
+  }, [tenureMonths]);
+
+  // Enriched schedule with cumulative interest and repayment progress percentage
+  const enrichedSchedule = useMemo(() => {
+    let runningInterest = 0;
+    return calculation.amortizationSchedule.map(row => {
+      runningInterest = Math.round((runningInterest + row.interestPaid) * 100) / 100;
+      const repaidPercent = principal > 0 
+        ? Math.min(100, Math.max(0, Math.round(((principal - row.closingBalance) / principal) * 1000) / 10))
+        : 100;
+      const principalShare = row.emi > 0 ? Math.round((row.principalPaid / row.emi) * 100) : 0;
+      const interestShare = Math.max(0, 100 - principalShare);
+      return {
+        ...row,
+        cumulativeInterest: runningInterest,
+        repaidPercent,
+        principalShare,
+        interestShare
+      };
+    });
+  }, [calculation.amortizationSchedule, principal]);
+
+  // Filtered rows for the table
+  const displayedSchedule = useMemo(() => {
+    return enrichedSchedule.filter(row => {
+      // Year filter
+      if (tableFilterYear !== 'ALL') {
+        const rowYear = Math.ceil(row.month / 12);
+        if (rowYear !== tableFilterYear) return false;
+      }
+      // Search filter
+      if (searchMonth.trim()) {
+        const query = searchMonth.trim().toLowerCase().replace('month', '').replace('m', '').trim();
+        if (query && !row.month.toString().includes(query)) return false;
+      }
+      return true;
+    });
+  }, [enrichedSchedule, tableFilterYear, searchMonth]);
+
+  // Export CSV
+  const handleExportCSV = () => {
+    const headers = [
+      'Month',
+      'Opening Balance (INR)',
+      'Monthly EMI (INR)',
+      'Principal Paid (INR)',
+      'Interest Paid (INR)',
+      'Cumulative Interest (INR)',
+      'Closing Balance (INR)',
+      'Repaid Percent'
+    ];
+    const rows = enrichedSchedule.map(r => [
+      `Month ${r.month}`,
+      r.openingBalance.toFixed(2),
+      r.emi.toFixed(2),
+      r.principalPaid.toFixed(2),
+      r.interestPaid.toFixed(2),
+      r.cumulativeInterest.toFixed(2),
+      r.closingBalance.toFixed(2),
+      `${r.repaidPercent}%`
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `PrimeBank_Amortization_Schedule_${principal}_${tenureMonths}M.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Prepare chart data for Recharts (Stacked Bar Chart: Principal + Interest)
   const chartData = useMemo(() => {
@@ -129,7 +207,7 @@ export const LoanEMICalculator: React.FC<LoanEMICalculatorProps> = ({
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Loan EMI & Payment Estimator</h2>
             <p className="text-slate-300 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
-              Calculate exact monthly installments, interest liability, and visualize decreasing interest portions over your tenure.
+              Calculate exact monthly installments, visualize declining interest portions on the bar chart, and review your complete month-by-month amortization schedule.
             </p>
           </div>
 
@@ -469,7 +547,7 @@ export const LoanEMICalculator: React.FC<LoanEMICalculatorProps> = ({
         </div>
       </div>
 
-      {/* NEW: Recharts Stacked Bar Chart Visualizing Decreasing Interest in EMI */}
+      {/* Recharts Stacked Bar Chart Visualizing Decreasing Interest in EMI */}
       <div className="border-t border-slate-200 bg-gradient-to-b from-white to-slate-50/70 p-6 sm:p-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
@@ -547,7 +625,7 @@ export const LoanEMICalculator: React.FC<LoanEMICalculatorProps> = ({
         </div>
 
         {/* Recharts Bar Chart Container */}
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/90 shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/90 shadow-sm mb-8">
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -621,82 +699,193 @@ export const LoanEMICalculator: React.FC<LoanEMICalculatorProps> = ({
             Each bar represents total monthly EMI ({formatINR(calculation.monthlyEMI)}). Hover over any month to inspect exact principal vs. interest breakdown and remaining balance.
           </p>
         </div>
-      </div>
 
-      {/* Expandable Amortization Schedule Drawer */}
-      <div className="border-t border-slate-200 bg-slate-50/60 p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <TrendingUp size={16} className="text-teal-600" />
-              <span>Amortization Repayment Schedule</span>
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Inspect month-by-month principal vs interest deduction across the loan lifecycle.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowAmortization(!showAmortization)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-semibold rounded-xl border border-slate-200 text-xs transition shadow-sm cursor-pointer"
-          >
-            <span>{showAmortization ? 'Hide Schedule' : 'View Full Schedule'}</span>
-            {showAmortization ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-        </div>
+        {/* DETAILED MONTHLY AMORTIZATION BREAKDOWN TABLE (Below the bar chart) */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-7 space-y-6">
+          {/* Table Header & Controls Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-teal-50 rounded-lg text-teal-700 border border-teal-200/60">
+                  <Table size={16} />
+                </div>
+                <h4 className="text-base font-bold text-slate-900">
+                  Monthly Amortization Schedule & Payment Ledger
+                </h4>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Detailed month-by-month principal reduction, interest deduction, and remaining loan balance across all {tenureMonths} installments.
+              </p>
+            </div>
 
-        {showAmortization && (
-          <div className="mt-5 space-y-4">
-            <div className="flex items-center justify-between text-xs text-slate-600">
-              <span>Showing {Math.min(amortizationMonthsToShow, calculation.amortizationSchedule.length)} of {calculation.amortizationSchedule.length} months</span>
-              {calculation.amortizationSchedule.length > 12 && (
-                <div className="flex items-center gap-2">
+            {/* Actions: Export CSV & Year filter */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 transition cursor-pointer"
+                title="Download amortization schedule as CSV"
+              >
+                <Download size={13} />
+                <span>Export CSV</span>
+              </button>
+
+              {/* Year filter buttons */}
+              {totalYears > 1 && (
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
                   <button
                     type="button"
-                    onClick={() => setAmortizationMonthsToShow(12)}
-                    className={`px-2 py-1 rounded text-[11px] font-semibold cursor-pointer ${amortizationMonthsToShow === 12 ? 'bg-teal-600 text-white' : 'bg-white border text-slate-600'}`}
+                    onClick={() => setTableFilterYear('ALL')}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                      tableFilterYear === 'ALL'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
                   >
-                    First 12 Months
+                    All ({tenureMonths}m)
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setAmortizationMonthsToShow(calculation.amortizationSchedule.length)}
-                    className={`px-2 py-1 rounded text-[11px] font-semibold cursor-pointer ${amortizationMonthsToShow > 12 ? 'bg-teal-600 text-white' : 'bg-white border text-slate-600'}`}
-                  >
-                    All {calculation.amortizationSchedule.length} Months
-                  </button>
+                  {Array.from({ length: totalYears }).map((_, idx) => {
+                    const yr = idx + 1;
+                    return (
+                      <button
+                        key={yr}
+                        type="button"
+                        onClick={() => setTableFilterYear(yr)}
+                        className={`px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                          tableFilterYear === yr
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Yr {yr}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
+          </div>
 
-            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm max-h-80 overflow-y-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100/90 text-slate-700 font-bold sticky top-0 uppercase tracking-wider text-[10px]">
-                  <tr>
-                    <th className="py-2.5 px-3">Month</th>
-                    <th className="py-2.5 px-3">Opening Balance</th>
-                    <th className="py-2.5 px-3">EMI Payment</th>
-                    <th className="py-2.5 px-3">Principal Paid</th>
-                    <th className="py-2.5 px-3">Interest Paid</th>
-                    <th className="py-2.5 px-3 text-right">Closing Balance</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-mono">
-                  {calculation.amortizationSchedule.slice(0, amortizationMonthsToShow).map(row => (
-                    <tr key={row.month} className="hover:bg-slate-50/70">
-                      <td className="py-2 px-3 font-sans font-semibold text-slate-800">Month {row.month}</td>
-                      <td className="py-2 px-3 text-slate-600">{formatINR(row.openingBalance)}</td>
-                      <td className="py-2 px-3 font-bold text-slate-900">{formatINR(row.emi)}</td>
-                      <td className="py-2 px-3 text-teal-700 font-semibold">{formatINR(row.principalPaid)}</td>
-                      <td className="py-2 px-3 text-amber-700">{formatINR(row.interestPaid)}</td>
-                      <td className="py-2 px-3 text-right text-slate-800 font-bold">{formatINR(row.closingBalance)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Quick Metrics Header Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+            <div>
+              <span className="text-[11px] text-slate-500 font-medium">Total Installments</span>
+              <div className="font-bold text-slate-900 font-mono mt-0.5">{tenureMonths} Monthly Payments</div>
+            </div>
+            <div>
+              <span className="text-[11px] text-slate-500 font-medium">Principal Repaid</span>
+              <div className="font-bold text-teal-700 font-mono mt-0.5">{formatINR(calculation.principal)}</div>
+            </div>
+            <div>
+              <span className="text-[11px] text-slate-500 font-medium">Total Interest Incurred</span>
+              <div className="font-bold text-amber-700 font-mono mt-0.5">{formatINR(calculation.totalInterest)}</div>
+            </div>
+            <div>
+              <span className="text-[11px] text-slate-500 font-medium">Total Borrowing Outflow</span>
+              <div className="font-bold text-slate-900 font-mono mt-0.5">{formatINR(calculation.totalPayable)}</div>
             </div>
           </div>
-        )}
+
+          {/* Filter / Search input */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="relative w-48">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Jump to month #..."
+                value={searchMonth}
+                onChange={e => setSearchMonth(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500"
+              />
+            </div>
+            <div className="text-xs text-slate-500">
+              Showing <span className="font-bold text-slate-800">{displayedSchedule.length}</span> of {tenureMonths} installments
+            </div>
+          </div>
+
+          {/* Amortization Table */}
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-inner max-h-96 overflow-y-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-100/90 text-slate-700 font-bold sticky top-0 uppercase tracking-wider text-[10px] z-10 backdrop-blur-sm shadow-sm">
+                <tr>
+                  <th className="py-3 px-3.5 border-b border-slate-200">Instalment</th>
+                  <th className="py-3 px-3.5 border-b border-slate-200">Opening Balance</th>
+                  <th className="py-3 px-3.5 border-b border-slate-200">Monthly EMI</th>
+                  <th className="py-3 px-3.5 border-b border-slate-200 text-teal-800 bg-teal-50/50">Principal Paid</th>
+                  <th className="py-3 px-3.5 border-b border-slate-200 text-amber-800 bg-amber-50/50">Interest Paid</th>
+                  <th className="py-3 px-3.5 border-b border-slate-200">Cumulative Interest</th>
+                  <th className="py-3 px-3.5 border-b border-slate-200 text-right">Closing Balance</th>
+                  <th className="py-3 px-3.5 border-b border-slate-200 text-center">Loan Progress</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono text-xs">
+                {displayedSchedule.map(row => (
+                  <tr key={row.month} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-2.5 px-3.5 font-sans font-bold text-slate-900">
+                      Month {row.month}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-slate-600">
+                      {formatINR(row.openingBalance)}
+                    </td>
+                    <td className="py-2.5 px-3.5 font-bold text-slate-900">
+                      {formatINR(row.emi)}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-teal-700 font-bold bg-teal-50/20">
+                      <span>{formatINR(row.principalPaid)}</span>
+                      <span className="text-[10px] text-teal-600 font-sans ml-1">({row.principalShare}%)</span>
+                    </td>
+                    <td className="py-2.5 px-3.5 text-amber-700 font-semibold bg-amber-50/20">
+                      <span>{formatINR(row.interestPaid)}</span>
+                      <span className="text-[10px] text-amber-600 font-sans ml-1">({row.interestShare}%)</span>
+                    </td>
+                    <td className="py-2.5 px-3.5 text-slate-500">
+                      {formatINR(row.cumulativeInterest)}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-right font-bold text-slate-900">
+                      {formatINR(row.closingBalance)}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center font-sans">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <div className="w-12 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-teal-500 rounded-full" 
+                            style={{ width: `${row.repaidPercent}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-semibold text-slate-500 min-w-8 text-right">
+                          {row.repaidPercent}%
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {displayedSchedule.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="py-8 text-center text-slate-400 font-sans">
+                      No installments match your filter.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+              <tfoot className="bg-slate-50 font-mono text-xs font-bold text-slate-900 border-t border-slate-200 sticky bottom-0 z-10">
+                <tr>
+                  <td className="py-3 px-3.5 font-sans">Total Repayment</td>
+                  <td className="py-3 px-3.5 text-slate-400">-</td>
+                  <td className="py-3 px-3.5">{formatINR(calculation.totalPayable)}</td>
+                  <td className="py-3 px-3.5 text-teal-700">{formatINR(calculation.principal)}</td>
+                  <td className="py-3 px-3.5 text-amber-700">{formatINR(calculation.totalInterest)}</td>
+                  <td className="py-3 px-3.5">{formatINR(calculation.totalInterest)}</td>
+                  <td className="py-3 px-3.5 text-right text-emerald-600 font-bold">₹0.00</td>
+                  <td className="py-3 px-3.5 text-center font-sans text-teal-700">100% Repaid</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-slate-400">
+            <span>Scroll vertically within the table to review all months or use the Year filters above.</span>
+            <span>Accrual methodology: {calcMethod === 'REDUCING' ? 'Daily Reducing Balance' : 'Simple Flat Rate'}</span>
+          </div>
+        </div>
       </div>
     </div>
   );
