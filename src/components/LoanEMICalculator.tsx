@@ -2,8 +2,18 @@ import React, { useState, useMemo } from 'react';
 import { 
   Calculator, Percent, Calendar, DollarSign, TrendingUp, 
   Sparkles, ChevronDown, ChevronUp, Check, Info, ArrowRight,
-  ShieldCheck, HelpCircle, Landmark
+  ShieldCheck, HelpCircle, Landmark, BarChart3, ArrowDownRight, Layers
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from 'recharts';
 import { 
   calculateEMI, 
   EMICalculationMethod, 
@@ -29,6 +39,7 @@ export const LoanEMICalculator: React.FC<LoanEMICalculatorProps> = ({
   const [selectedPreset, setSelectedPreset] = useState<string>('retail');
   const [showAmortization, setShowAmortization] = useState<boolean>(false);
   const [amortizationMonthsToShow, setAmortizationMonthsToShow] = useState<number>(12);
+  const [chartViewMode, setChartViewMode] = useState<'all' | 'milestones'>('milestones');
 
   // Compute EMI and breakdowns reactively
   const calculation = useMemo(() => {
@@ -52,6 +63,52 @@ export const LoanEMICalculator: React.FC<LoanEMICalculatorProps> = ({
     return `${years} ${years === 1 ? 'Yr' : 'Yrs'} ${months} Mos`;
   }, [tenureMonths]);
 
+  // Prepare chart data for Recharts (Stacked Bar Chart: Principal + Interest)
+  const chartData = useMemo(() => {
+    const schedule = calculation.amortizationSchedule;
+    if (!schedule || schedule.length === 0) return [];
+
+    if (chartViewMode === 'all' || schedule.length <= 15) {
+      return schedule.map(row => ({
+        label: `M${row.month}`,
+        monthNum: row.month,
+        principal: row.principalPaid,
+        interest: row.interestPaid,
+        emi: row.emi,
+        closingBalance: row.closingBalance
+      }));
+    }
+
+    // Milestones mode: sample evenly so chart is clean and readable
+    const step = schedule.length > 36 ? 3 : 2;
+    const sampled = schedule.filter((row, idx) => {
+      return idx === 0 || row.month % step === 0 || idx === schedule.length - 1;
+    });
+
+    return sampled.map(row => ({
+      label: `M${row.month}`,
+      monthNum: row.month,
+      principal: row.principalPaid,
+      interest: row.interestPaid,
+      emi: row.emi,
+      closingBalance: row.closingBalance
+    }));
+  }, [calculation.amortizationSchedule, chartViewMode]);
+
+  // Compute interest decrease stats
+  const interestTrendStats = useMemo(() => {
+    const schedule = calculation.amortizationSchedule;
+    if (!schedule || schedule.length === 0) {
+      return { m1Interest: 0, finalInterest: 0, dropPercent: 0 };
+    }
+    const m1Interest = schedule[0]?.interestPaid || 0;
+    const finalInterest = schedule[schedule.length - 1]?.interestPaid || 0;
+    const dropPercent = m1Interest > 0 
+      ? Math.round(((m1Interest - finalInterest) / m1Interest) * 1000) / 10 
+      : 0;
+    return { m1Interest, finalInterest, dropPercent };
+  }, [calculation.amortizationSchedule]);
+
   const handleApplyClick = () => {
     if (onPreFillApplication) {
       const presetObj = LOAN_PRESETS.find(p => p.id === selectedPreset);
@@ -72,7 +129,7 @@ export const LoanEMICalculator: React.FC<LoanEMICalculatorProps> = ({
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Loan EMI & Payment Estimator</h2>
             <p className="text-slate-300 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
-              Calculate exact monthly installments, interest liability, and complete principal amortization schedules before submitting your application.
+              Calculate exact monthly installments, interest liability, and visualize decreasing interest portions over your tenure.
             </p>
           </div>
 
@@ -409,6 +466,160 @@ export const LoanEMICalculator: React.FC<LoanEMICalculatorProps> = ({
               </li>
             </ul>
           </div>
+        </div>
+      </div>
+
+      {/* NEW: Recharts Stacked Bar Chart Visualizing Decreasing Interest in EMI */}
+      <div className="border-t border-slate-200 bg-gradient-to-b from-white to-slate-50/70 p-6 sm:p-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-amber-50 rounded-xl text-amber-700 border border-amber-200/60">
+                <BarChart3 size={18} />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">
+                Monthly EMI Composition: Decreasing Interest vs. Increasing Principal
+              </h3>
+            </div>
+            <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
+              Every month you make the same fixed EMI payment, but watch how the <span className="font-semibold text-amber-700">interest component (amber)</span> shrinks while the <span className="font-semibold text-teal-700">principal component (teal)</span> grows to build equity.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setChartViewMode('milestones')}
+                className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                  chartViewMode === 'milestones'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Milestones
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartViewMode('all')}
+                className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                  chartViewMode === 'all'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All {tenureMonths} Mos
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Insight Highlights Bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Month 1 Interest</div>
+            <div className="text-lg font-bold font-mono text-amber-600 mt-0.5">
+              {formatINR(interestTrendStats.m1Interest)}
+            </div>
+            <div className="text-[11px] text-slate-500 mt-0.5">Peak interest share of EMI</div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Final Month Interest</div>
+            <div className="text-lg font-bold font-mono text-emerald-600 mt-0.5">
+              {formatINR(interestTrendStats.finalInterest)}
+            </div>
+            <div className="text-[11px] text-slate-500 mt-0.5">Near-zero interest liability</div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <ArrowDownRight size={13} className="text-teal-600" />
+              <span>Interest Reduction</span>
+            </div>
+            <div className="text-lg font-bold text-teal-700 mt-0.5">
+              {calcMethod === 'REDUCING' ? `${interestTrendStats.dropPercent}% drop` : 'Flat Rate (constant)'}
+            </div>
+            <div className="text-[11px] text-slate-500 mt-0.5">
+              {calcMethod === 'REDUCING' ? 'Over the loan tenure' : '9.0% simple annual spread'}
+            </div>
+          </div>
+        </div>
+
+        {/* Recharts Bar Chart Container */}
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/90 shadow-sm">
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{ top: 15, right: 15, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="label" 
+                  tick={{ fontSize: 11, fill: '#64748b' }} 
+                  axisLine={{ stroke: '#cbd5e1' }}
+                  tickLine={{ stroke: '#cbd5e1' }}
+                />
+                <YAxis 
+                  tickFormatter={(val: number) => `₹${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  axisLine={{ stroke: '#cbd5e1' }}
+                  tickLine={{ stroke: '#cbd5e1' }}
+                />
+                <Tooltip 
+                  formatter={(value: any, name: any) => {
+                    const num = typeof value === 'number' ? value : Number(value);
+                    const formatted = formatINR(num);
+                    if (name === 'principal') return [formatted, 'Principal Paid (Equity)'];
+                    if (name === 'interest') return [formatted, 'Interest Cost'];
+                    return [formatted, name];
+                  }}
+                  labelFormatter={(label) => `Instalment: ${label}`}
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
+                    borderRadius: '12px',
+                    border: '1px solid #334155',
+                    color: '#f8fafc',
+                    fontSize: '12px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2)'
+                  }}
+                  itemStyle={{ padding: '2px 0' }}
+                />
+                <Legend 
+                  verticalAlign="top" 
+                  height={36}
+                  formatter={(value: string) => {
+                    if (value === 'principal') {
+                      return <span className="text-xs font-semibold text-slate-700">Principal Portion (Increasing)</span>;
+                    }
+                    if (value === 'interest') {
+                      return <span className="text-xs font-semibold text-amber-700">Interest Portion (Decreasing)</span>;
+                    }
+                    return value;
+                  }}
+                />
+                {/* Stacked bars: Principal (Teal) + Interest (Amber) */}
+                <Bar 
+                  dataKey="principal" 
+                  stackId="emi" 
+                  fill="#0d9488" 
+                  radius={[0, 0, 4, 4]} 
+                  name="principal"
+                />
+                <Bar 
+                  dataKey="interest" 
+                  stackId="emi" 
+                  fill="#f59e0b" 
+                  radius={[4, 4, 0, 0]} 
+                  name="interest"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="text-[11px] text-center text-slate-500 mt-3">
+            Each bar represents total monthly EMI ({formatINR(calculation.monthlyEMI)}). Hover over any month to inspect exact principal vs. interest breakdown and remaining balance.
+          </p>
         </div>
       </div>
 
