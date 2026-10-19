@@ -72,7 +72,9 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
 export const INITIAL_LOANS: Loan[] = [
   { id: 1, userId: 2, userName: 'Anita Sharma', amount: 25000.00, termMonths: 12, purpose: 'Personal credit facility', status: 'APPROVED', createdAt: '2026-10-06' },
   { id: 2, userId: 2, userName: 'Anita Sharma', amount: 250000.00, termMonths: 24, purpose: 'Home renovation', status: 'REQUESTED', createdAt: '2026-10-07' },
-  { id: 3, userId: 4, userName: 'Meera Iyer', amount: 80000.00, termMonths: 12, purpose: 'Vehicle loan', status: 'APPROVED', createdAt: '2026-10-08' }
+  { id: 3, userId: 4, userName: 'Meera Iyer', amount: 80000.00, termMonths: 12, purpose: 'Vehicle loan', status: 'APPROVED', createdAt: '2026-10-08' },
+  { id: 4, userId: 2, userName: 'Anita Sharma', amount: 500000.00, termMonths: 36, purpose: 'Commercial property advance', status: 'REJECTED', createdAt: '2026-09-18' },
+  { id: 5, userId: 2, userName: 'Anita Sharma', amount: 15000.00, termMonths: 6, purpose: 'Consumer electronics', status: 'REPAID', createdAt: '2026-08-10' }
 ];
 
 export const INITIAL_INVESTMENTS: Investment[] = [

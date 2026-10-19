@@ -4,7 +4,8 @@ import {
   UserCheck, Settings, LogOut, Menu, X, ArrowUpRight, 
   ArrowDownLeft, AlertCircle, CheckCircle2, DollarSign,
   TrendingUp, Users, FileText, Download, Phone, Mail, MapPin,
-  Lock, Key, Wallet, Plus, Trash2, Edit3, ChevronRight, RefreshCw
+  Lock, Key, Wallet, Plus, Trash2, Edit3, ChevronRight, RefreshCw,
+  Clock, XCircle, Check
 } from 'lucide-react';
 
 import { 
@@ -1365,14 +1366,34 @@ export default function App() {
                             <td className="p-2 font-medium text-slate-800">{loan.purpose}</td>
                             <td className="p-2 font-mono font-semibold">₹{estPayable.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                             <td className="p-2">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                loan.status === 'APPROVED' ? 'bg-blue-100 text-blue-800' :
-                                loan.status === 'REPAID' ? 'bg-emerald-100 text-emerald-800' :
-                                loan.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' :
-                                'bg-amber-100 text-amber-800'
-                              }`}>
-                                {loan.status === 'APPROVED' ? 'ACTIVE' : loan.status}
-                              </span>
+                              {loan.status === 'REQUESTED' && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/90 shadow-xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                  <Clock size={11} className="text-amber-600" />
+                                  <span>Pending</span>
+                                </span>
+                              )}
+                              {loan.status === 'APPROVED' && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/90 shadow-xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                  <CheckCircle2 size={11} className="text-emerald-600" />
+                                  <span>Approved</span>
+                                </span>
+                              )}
+                              {loan.status === 'REJECTED' && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200/90 shadow-xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                  <XCircle size={11} className="text-rose-600" />
+                                  <span>Rejected</span>
+                                </span>
+                              )}
+                              {loan.status === 'REPAID' && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200/90 shadow-xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                                  <Check size={11} className="text-slate-600" />
+                                  <span>Repaid</span>
+                                </span>
+                              )}
                             </td>
                             <td className="p-2 text-right">
                               {loan.status === 'APPROVED' ? (
@@ -1389,11 +1410,17 @@ export default function App() {
                                   Repay
                                 </button>
                               ) : loan.status === 'REPAID' ? (
-                                <span className="text-emerald-600 font-semibold text-[11px] inline-flex items-center gap-0.5">
-                                  ✓ Repaid
+                                <span className="text-slate-500 font-semibold text-[11px] inline-flex items-center gap-0.5">
+                                  ✓ Settled
+                                </span>
+                              ) : loan.status === 'REJECTED' ? (
+                                <span className="text-rose-600 font-medium text-[11px]">
+                                  Declined
                                 </span>
                               ) : (
-                                <span className="text-slate-400 text-[11px]">Under review</span>
+                                <span className="text-amber-700 font-medium text-[11px] inline-flex items-center gap-1">
+                                  <Clock size={11} /> Under review
+                                </span>
                               )}
                             </td>
                           </tr>
