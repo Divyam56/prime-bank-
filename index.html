@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          var currentFetch = typeof originalFetch === 'function' ? originalFetch.bind(window) : originalFetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() {
+              return currentFetch;
+            },
+            set: function(fn) {
+              currentFetch = fn;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (_) {}
+
+        window.addEventListener('error', function(event) {
+          if (event.filename && event.filename.indexOf('chrome-extension://') !== -1) {
+            event.preventDefault();
+          }
+        });
+      })();
+    </script>
+    <title>PrimeBank - Online Banking System</title>
+    <meta name="description" content="Production-grade online banking system built with Java 21, Jakarta Servlets, embedded Tomcat, HikariCP, and responsive design." />
+    <meta property="og:title" content="PrimeBank - Online Banking System" />
+    <meta property="og:description" content="Production-grade online banking system built with Java 21, Jakarta Servlets, embedded Tomcat, HikariCP, and responsive design." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="/src/main/resources/static/favicon.svg" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
