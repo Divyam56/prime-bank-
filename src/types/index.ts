@@ -10,6 +10,7 @@ export type UserStatus = 'ACTIVE' | 'SUSPENDED';
 export type AccountType = 'SAVINGS' | 'CURRENT';
 export type TransactionType = 'DEPOSIT' | 'WITHDRAWAL' | 'TRANSFER';
 export type TransactionStatus = 'COMPLETED' | 'PENDING' | 'FAILED';
+export type TransactionCategory = 'Food' | 'Travel' | 'Utilities' | 'Bills' | 'Shopping' | 'Entertainment' | 'Health' | 'Salary' | 'Investment' | 'Other';
 export type LoanStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'REPAID';
 
 export interface User {
@@ -41,6 +42,7 @@ export interface Transaction {
   amount: number;
   type: TransactionType;
   status: TransactionStatus;
+  category?: TransactionCategory | string;
   description: string;
   createdAt: string;
 }

@@ -278,6 +278,7 @@ export function exportTransactionHistoryPDF(options: PDFExportOptions): void {
     return [
       txn.reference,
       txn.createdAt,
+      txn.category || 'General',
       txn.type,
       txn.description,
       counterparty,
@@ -289,7 +290,7 @@ export function exportTransactionHistoryPDF(options: PDFExportOptions): void {
   autoTable(doc, {
     startY: cursorY,
     margin: { left: 14, right: 14 },
-    head: [['Reference', 'Date & Time', 'Type', 'Description', 'Counterparty', 'Status', 'Amount']],
+    head: [['Reference', 'Date & Time', 'Category', 'Type', 'Description', 'Counterparty', 'Status', 'Amount']],
     body: tableRows,
     theme: 'striped',
     styles: {

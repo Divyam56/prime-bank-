@@ -61,14 +61,14 @@ export const INITIAL_ACCOUNTS: Account[] = [
 ];
 
 export const INITIAL_TRANSACTIONS: Transaction[] = [
-  { id: 1001, reference: 'TXN-1001', fromAccountId: null, toAccountId: 101, amount: 50000.00, type: 'DEPOSIT', status: 'COMPLETED', description: 'Salary credit - October 2026', createdAt: '2026-10-01 09:30' },
-  { id: 1002, reference: 'TXN-1002', fromAccountId: 101, toAccountId: 102, amount: 25000.00, type: 'TRANSFER', status: 'COMPLETED', description: 'Savings to current sweep', createdAt: '2026-10-02 11:15' },
-  { id: 1003, reference: 'TXN-1003', fromAccountId: 101, toAccountId: 103, amount: 1500.00, type: 'TRANSFER', status: 'COMPLETED', description: 'Rent split with Rahul', createdAt: '2026-10-03 14:20' },
-  { id: 1004, reference: 'TXN-1004', fromAccountId: 104, toAccountId: 101, amount: 750.00, type: 'TRANSFER', status: 'COMPLETED', description: 'Dinner settlement', createdAt: '2026-10-04 20:45' },
-  { id: 1005, reference: 'TXN-1005', fromAccountId: 101, toAccountId: null, amount: 2000.00, type: 'WITHDRAWAL', status: 'COMPLETED', description: 'ATM withdrawal - MG Road', createdAt: '2026-10-05 16:10' },
-  { id: 1006, reference: 'TXN-1006', fromAccountId: null, toAccountId: 104, amount: 120000.00, type: 'DEPOSIT', status: 'COMPLETED', description: 'Fixed maturity payout', createdAt: '2026-10-06 10:00' },
-  { id: 1007, reference: 'TXN-1007', fromAccountId: 101, toAccountId: 104, amount: 4800.00, type: 'TRANSFER', status: 'PENDING', description: 'NEFT outward clearing to Meera Iyer', createdAt: '2026-10-07 15:45' },
-  { id: 1008, reference: 'TXN-1008', fromAccountId: 102, toAccountId: null, amount: 75000.00, type: 'WITHDRAWAL', status: 'FAILED', description: 'International gateway auth timeout', createdAt: '2026-10-08 18:20' }
+  { id: 1001, reference: 'TXN-1001', fromAccountId: null, toAccountId: 101, amount: 50000.00, type: 'DEPOSIT', status: 'COMPLETED', category: 'Salary', description: 'Salary credit - October 2026', createdAt: '2026-10-01 09:30' },
+  { id: 1002, reference: 'TXN-1002', fromAccountId: 101, toAccountId: 102, amount: 25000.00, type: 'TRANSFER', status: 'COMPLETED', category: 'Utilities', description: 'Savings to current sweep', createdAt: '2026-10-02 11:15' },
+  { id: 1003, reference: 'TXN-1003', fromAccountId: 101, toAccountId: 103, amount: 1500.00, type: 'TRANSFER', status: 'COMPLETED', category: 'Bills', description: 'Rent split with Rahul', createdAt: '2026-10-03 14:20' },
+  { id: 1004, reference: 'TXN-1004', fromAccountId: 104, toAccountId: 101, amount: 750.00, type: 'TRANSFER', status: 'COMPLETED', category: 'Food', description: 'Dinner settlement', createdAt: '2026-10-04 20:45' },
+  { id: 1005, reference: 'TXN-1005', fromAccountId: 101, toAccountId: null, amount: 2000.00, type: 'WITHDRAWAL', status: 'COMPLETED', category: 'Other', description: 'ATM withdrawal - MG Road', createdAt: '2026-10-05 16:10' },
+  { id: 1006, reference: 'TXN-1006', fromAccountId: null, toAccountId: 104, amount: 120000.00, type: 'DEPOSIT', status: 'COMPLETED', category: 'Investment', description: 'Fixed maturity payout', createdAt: '2026-10-06 10:00' },
+  { id: 1007, reference: 'TXN-1007', fromAccountId: 101, toAccountId: 104, amount: 4800.00, type: 'TRANSFER', status: 'PENDING', category: 'Travel', description: 'NEFT outward clearing to Meera Iyer', createdAt: '2026-10-07 15:45' },
+  { id: 1008, reference: 'TXN-1008', fromAccountId: 102, toAccountId: null, amount: 75000.00, type: 'WITHDRAWAL', status: 'FAILED', category: 'Shopping', description: 'International gateway auth timeout', createdAt: '2026-10-08 18:20' }
 ];
 
 export const INITIAL_LOANS: Loan[] = [

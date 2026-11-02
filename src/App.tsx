@@ -5,11 +5,11 @@ import {
   ArrowDownLeft, AlertCircle, CheckCircle2, DollarSign,
   TrendingUp, Users, FileText, Download, Phone, Mail, MapPin,
   Lock, Key, Wallet, Plus, Trash2, Edit3, ChevronRight, RefreshCw,
-  Clock, XCircle, Check, Bell, AlertTriangle, Sun, Moon, QrCode
+  Clock, XCircle, Check, Bell, AlertTriangle, Sun, Moon, QrCode, Tag
 } from 'lucide-react';
 
 import { 
-  User, Account, Transaction, Loan, Investment, SystemSettings, FlashNotification 
+  User, Account, Transaction, Loan, Investment, SystemSettings, FlashNotification, TransactionCategory 
 } from './types';
 import { 
   INITIAL_SYSTEM_SETTINGS, INITIAL_USERS, INITIAL_ACCOUNTS, 
@@ -62,12 +62,19 @@ export default function App() {
   const [transferFrom, setTransferFrom] = useState('');
   const [transferTo, setTransferTo] = useState('');
   const [transferAmount, setTransferAmount] = useState('');
+  const [transferCategory, setTransferCategory] = useState<TransactionCategory>('Bills');
   const [transferNote, setTransferNote] = useState('');
   const [qrScannerOpen, setQrScannerOpen] = useState(false);
+
+  // Categories available for tagging
+  const TRANSACTION_CATEGORIES: TransactionCategory[] = [
+    'Food', 'Travel', 'Utilities', 'Bills', 'Shopping', 'Entertainment', 'Health', 'Salary', 'Investment', 'Other'
+  ];
 
   // History Filter
   const [historySearch, setHistorySearch] = useState('');
   const [historyType, setHistoryType] = useState('ALL');
+  const [historyCategory, setHistoryCategory] = useState('ALL');
   const [historyStatus, setHistoryStatus] = useState('ALL');
 
   // Services form
@@ -273,6 +280,7 @@ export default function App() {
       amount: amt,
       type: 'TRANSFER',
       status: 'COMPLETED',
+      category: transferCategory || 'Bills',
       description: transferNote.trim() || `Transfer to ${toAcc.accountNumber}`,
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
     };
@@ -281,6 +289,7 @@ export default function App() {
     setTransactions([newTxn, ...transactions]);
     setTransferAmount('');
     setTransferNote('');
+    setTransferCategory('Bills');
 
     // Check if customer's remaining balance has breached their configured alert threshold
     const userRemainingAccounts = updatedAccounts.filter(a => a.userId === currentUser!.id);
@@ -532,11 +541,12 @@ export default function App() {
 
   // CSV export for admin
   const handleExportCSV = () => {
-    const headers = ['reference', 'from_account', 'to_account', 'amount', 'type', 'status', 'description', 'created_at'];
+    const headers = ['reference', 'from_account', 'to_account', 'category', 'amount', 'type', 'status', 'description', 'created_at'];
     const rows = transactions.map(t => [
       t.reference,
       getAccountDisplay(t.fromAccountId),
       getAccountDisplay(t.toAccountId),
+      t.category || 'General',
       t.amount.toFixed(2),
       t.type,
       t.status,
@@ -560,8 +570,9 @@ export default function App() {
     // Filter current user transactions matching active filters
     const filteredTxns = userTransactions
       .filter(t => historyType === 'ALL' || t.type === historyType)
+      .filter(t => historyCategory === 'ALL' || (t.category || 'Other') === historyCategory)
       .filter(t => historyStatus === 'ALL' || t.status === historyStatus)
-      .filter(t => !historySearch || t.reference.toLowerCase().includes(historySearch.toLowerCase()) || t.description.toLowerCase().includes(historySearch.toLowerCase()));
+      .filter(t => !historySearch || t.reference.toLowerCase().includes(historySearch.toLowerCase()) || t.description.toLowerCase().includes(historySearch.toLowerCase()) || (t.category && t.category.toLowerCase().includes(historySearch.toLowerCase())));
 
     exportTransactionHistoryPDF({
       user: currentUser,
@@ -1161,13 +1172,21 @@ export default function App() {
                         <tr key={txn.id} className="hover:bg-slate-50/50">
                           <td className="py-3 px-4 font-mono text-xs font-semibold text-slate-700">{txn.reference}</td>
                           <td className="py-3 px-4">
-                            <span className="font-medium text-slate-900">{txn.description}</span>
-                            <span className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              txn.type === 'DEPOSIT' ? 'bg-emerald-100 text-emerald-800' :
-                              txn.type === 'WITHDRAWAL' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800'
-                            }`}>
-                              {txn.type}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-medium text-slate-900">{txn.description}</span>
+                              {txn.category && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+                                  <Tag size={10} className="text-amber-600 dark:text-amber-400" />
+                                  {txn.category}
+                                </span>
+                              )}
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                txn.type === 'DEPOSIT' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' :
+                                txn.type === 'WITHDRAWAL' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300'
+                              }`}>
+                                {txn.type}
+                              </span>
+                            </div>
                           </td>
                           <td className="py-3 px-4 font-mono text-xs text-slate-500">
                             {txn.fromAccountId && !userAccountIds.has(txn.fromAccountId) ? `From: ${getAccountDisplay(txn.fromAccountId)}` :
@@ -1276,6 +1295,46 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Optional Category Field */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase">
+                      Category (Optional)
+                    </label>
+                    <span className="text-[11px] text-slate-500">Helps track & organize spending</span>
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={transferCategory}
+                      onChange={e => setTransferCategory(e.target.value as TransactionCategory)}
+                      className="w-full pl-3.5 pr-8 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white cursor-pointer"
+                    >
+                      {TRANSACTION_CATEGORIES.map(cat => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* Quick Category Chips */}
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {TRANSACTION_CATEGORIES.slice(0, 5).map(cat => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setTransferCategory(cat)}
+                        className={`px-2 py-0.5 rounded text-[11px] font-medium transition cursor-pointer ${
+                          transferCategory === cat
+                            ? 'bg-teal-600 text-white shadow-xs'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Note / Description (Optional)</label>
                   <input 
@@ -1353,6 +1412,17 @@ export default function App() {
                   <option value="WITHDRAWAL">Withdrawals</option>
                 </select>
                 <select 
+                  value={historyCategory} 
+                  onChange={e => setHistoryCategory(e.target.value)}
+                  className="px-3 py-1.5 rounded-lg border border-slate-300 text-sm bg-white cursor-pointer"
+                  aria-label="Filter transactions by category"
+                >
+                  <option value="ALL">All Categories</option>
+                  {TRANSACTION_CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+                <select 
                   value={historyStatus} 
                   onChange={e => setHistoryStatus(e.target.value)}
                   className="px-3 py-1.5 rounded-lg border border-slate-300 text-sm bg-white cursor-pointer"
@@ -1366,7 +1436,7 @@ export default function App() {
               </div>
               <div className="flex items-center gap-2">
                 <button 
-                  onClick={() => { setHistorySearch(''); setHistoryType('ALL'); setHistoryStatus('ALL'); }}
+                  onClick={() => { setHistorySearch(''); setHistoryType('ALL'); setHistoryCategory('ALL'); setHistoryStatus('ALL'); }}
                   className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer font-medium"
                 >
                   Clear Filters
@@ -1381,6 +1451,7 @@ export default function App() {
                   <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-semibold border-b border-slate-200">
                     <tr>
                       <th className="py-3 px-4">Reference</th>
+                      <th className="py-3 px-4">Category</th>
                       <th className="py-3 px-4">Details</th>
                       <th className="py-3 px-4">Counterparty</th>
                       <th className="py-3 px-4">Status</th>
@@ -1391,13 +1462,20 @@ export default function App() {
                   <tbody className="divide-y divide-slate-100">
                     {userTransactions
                       .filter(t => historyType === 'ALL' || t.type === historyType)
+                      .filter(t => historyCategory === 'ALL' || (t.category || 'Other') === historyCategory)
                       .filter(t => historyStatus === 'ALL' || t.status === historyStatus)
-                      .filter(t => !historySearch || t.reference.toLowerCase().includes(historySearch.toLowerCase()) || t.description.toLowerCase().includes(historySearch.toLowerCase()))
+                      .filter(t => !historySearch || t.reference.toLowerCase().includes(historySearch.toLowerCase()) || t.description.toLowerCase().includes(historySearch.toLowerCase()) || (t.category && t.category.toLowerCase().includes(historySearch.toLowerCase())))
                       .map(txn => {
                         const isCredit = txn.toAccountId && userAccountIds.has(txn.toAccountId) && (!txn.fromAccountId || !userAccountIds.has(txn.fromAccountId));
                         return (
                           <tr key={txn.id} className="hover:bg-slate-50/50">
                             <td className="py-3 px-4 font-mono text-xs font-semibold text-slate-700">{txn.reference}</td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 shadow-2xs">
+                                <Tag size={11} className="text-amber-600 dark:text-amber-400" />
+                                {txn.category || 'General'}
+                              </span>
+                            </td>
                             <td className="py-3 px-4">
                               <span className="font-medium text-slate-900">{txn.description}</span>
                               <span className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -1434,11 +1512,12 @@ export default function App() {
                       })}
                     {userTransactions
                       .filter(t => historyType === 'ALL' || t.type === historyType)
+                      .filter(t => historyCategory === 'ALL' || (t.category || 'Other') === historyCategory)
                       .filter(t => historyStatus === 'ALL' || t.status === historyStatus)
-                      .filter(t => !historySearch || t.reference.toLowerCase().includes(historySearch.toLowerCase()) || t.description.toLowerCase().includes(historySearch.toLowerCase()))
+                      .filter(t => !historySearch || t.reference.toLowerCase().includes(historySearch.toLowerCase()) || t.description.toLowerCase().includes(historySearch.toLowerCase()) || (t.category && t.category.toLowerCase().includes(historySearch.toLowerCase())))
                       .length === 0 && (
                         <tr>
-                          <td colSpan={6} className="py-8 text-center text-slate-400">
+                          <td colSpan={7} className="py-8 text-center text-slate-400">
                             No transactions found matching your selected filters.
                           </td>
                         </tr>
@@ -2414,6 +2493,7 @@ export default function App() {
                   <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-semibold border-b border-slate-200">
                     <tr>
                       <th className="py-3 px-4">Reference</th>
+                      <th className="py-3 px-4">Category</th>
                       <th className="py-3 px-4">From</th>
                       <th className="py-3 px-4">To</th>
                       <th className="py-3 px-4">Amount (₹)</th>
@@ -2427,6 +2507,12 @@ export default function App() {
                     {transactions.map(t => (
                       <tr key={t.id} className="hover:bg-slate-50/50">
                         <td className="py-3 px-4 font-mono text-xs font-semibold">{t.reference}</td>
+                        <td className="py-3 px-4">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+                            <Tag size={10} className="text-amber-600 dark:text-amber-400" />
+                            {t.category || 'General'}
+                          </span>
+                        </td>
                         <td className="py-3 px-4 font-mono text-xs text-slate-600">{getAccountDisplay(t.fromAccountId)}</td>
                         <td className="py-3 px-4 font-mono text-xs text-slate-600">{getAccountDisplay(t.toAccountId)}</td>
                         <td className="py-3 px-4 font-mono font-bold">₹{t.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
