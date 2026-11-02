@@ -1,0 +1,8 @@
+{
+  "name": "PrimeBank - Online Banking System",
+  "description": "Production-grade online banking system built with Java 21, Jakarta Servlets, embedded Tomcat, HikariCP, and responsive design.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

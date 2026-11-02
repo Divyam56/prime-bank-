@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Comprehensive, elegant Dark Mode styling for cards, inputs, tables, and borders */
+@layer base {
+  .dark {
+    color-scheme: dark;
+  }
+
+  .dark body {
+    background-color: #020617; /* slate-950 */
+    color: #f8fafc; /* slate-50 */
+  }
+
+  /* Dark mode surface elevations */
+  .dark .bg-white {
+    background-color: #0f172a !important; /* slate-900 */
+    color: #f1f5f9;
+  }
+
+  .dark .bg-slate-50 {
+    background-color: #1e293b !important; /* slate-800 */
+    color: #f1f5f9;
+  }
+
+  .dark .border-slate-200,
+  .dark .border-slate-100 {
+    border-color: #334155 !important; /* slate-700 */
+  }
+
+  .dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+  .dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #334155 !important;
+  }
+
+  /* Dark mode typography adjustments */
+  .dark .text-slate-900,
+  .dark .text-slate-800 {
+    color: #f8fafc !important;
+  }
+
+  .dark .text-slate-700,
+  .dark .text-slate-600 {
+    color: #cbd5e1 !important; /* slate-300 */
+  }
+
+  .dark .text-slate-500 {
+    color: #94a3b8 !important; /* slate-400 */
+  }
+
+  .dark .text-\[\#0b2545\] {
+    color: #38bdf8 !important; /* sky-400 in dark mode */
+  }
+
+  /* Inputs, selects, and textareas in dark mode */
+  .dark input,
+  .dark select,
+  .dark textarea {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    border-color: #475569 !important;
+  }
+
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: #64748b !important;
+  }
+
+  /* Table styling in dark mode */
+  .dark thead {
+    background-color: #1e293b !important;
+  }
+
+  .dark thead th {
+    color: #94a3b8 !important;
+    border-color: #334155 !important;
+  }
+
+  .dark tbody tr:hover {
+    background-color: rgba(51, 65, 85, 0.4) !important;
+  }
+
+  /* Dark mode badge and alert adjustments */
+  .dark .bg-slate-100 {
+    background-color: #334155 !important;
+    color: #e2e8f0 !important;
+  }
+
+  .dark .hover\:bg-slate-50:hover,
+  .dark .hover\:bg-slate-100:hover {
+    background-color: #334155 !important;
+  }
+}

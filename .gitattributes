@@ -1,0 +1,5 @@
+# Tell GitHub Linguist to recognize Java as the primary language
+*.tsx linguist-documentation=true
+*.ts linguist-documentation=true
+bun.lock linguist-vendored=true
+package.json linguist-vendored=true
