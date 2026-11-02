@@ -5,7 +5,7 @@ import {
   ArrowDownLeft, AlertCircle, CheckCircle2, DollarSign,
   TrendingUp, Users, FileText, Download, Phone, Mail, MapPin,
   Lock, Key, Wallet, Plus, Trash2, Edit3, ChevronRight, RefreshCw,
-  Clock, XCircle, Check, Bell, AlertTriangle, Sun, Moon
+  Clock, XCircle, Check, Bell, AlertTriangle, Sun, Moon, QrCode
 } from 'lucide-react';
 
 import { 
@@ -17,6 +17,7 @@ import {
 } from './data/initialData';
 import { LoanEMICalculator } from './components/LoanEMICalculator';
 import { LoanDetailsModal } from './components/LoanDetailsModal';
+import { QRScannerModal } from './components/QRScannerModal';
 import { exportTransactionHistoryPDF } from './utils/statementPdfExport';
 import { checkBalanceThresholdAlert } from './utils/balanceAlert';
 import { getInitialTheme, applyTheme, ThemeMode } from './utils/theme';
@@ -62,6 +63,7 @@ export default function App() {
   const [transferTo, setTransferTo] = useState('');
   const [transferAmount, setTransferAmount] = useState('');
   const [transferNote, setTransferNote] = useState('');
+  const [qrScannerOpen, setQrScannerOpen] = useState(false);
 
   // History Filter
   const [historySearch, setHistorySearch] = useState('');
@@ -1221,17 +1223,39 @@ export default function App() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Recipient Account Number</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={transferTo} 
-                    onChange={e => setTransferTo(e.target.value.toUpperCase())}
-                    placeholder="e.g. SB100003" 
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-mono"
-                  />
-                  <div className="text-[11px] text-slate-500 mt-1">
-                    Try demo accounts: <span className="font-mono text-teal-600 font-semibold cursor-pointer" onClick={() => setTransferTo('SB100003')}>SB100003</span> (Rahul) or <span className="font-mono text-teal-600 font-semibold cursor-pointer" onClick={() => setTransferTo('SB100004')}>SB100004</span> (Meera)
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase">Recipient Account Number</label>
+                    <button
+                      type="button"
+                      onClick={() => setQrScannerOpen(true)}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 py-0.5 px-2 rounded-md hover:bg-teal-50 dark:hover:bg-teal-950/40 border border-teal-200 dark:border-teal-800 transition cursor-pointer"
+                      title="Scan QR code with camera"
+                    >
+                      <QrCode size={14} />
+                      <span>Scan QR</span>
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      required 
+                      value={transferTo} 
+                      onChange={e => setTransferTo(e.target.value.toUpperCase())}
+                      placeholder="e.g. SB100003" 
+                      className="w-full pl-3.5 pr-10 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-mono uppercase"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setQrScannerOpen(true)}
+                      className="absolute right-2 top-2 p-1 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 rounded transition cursor-pointer"
+                      aria-label="Scan QR code using camera"
+                      title="Scan QR Code"
+                    >
+                      <QrCode size={18} />
+                    </button>
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                    <span>Try demo accounts: <span className="font-mono text-teal-600 font-semibold cursor-pointer" onClick={() => setTransferTo('SB100003')}>SB100003</span> (Rahul) or <span className="font-mono text-teal-600 font-semibold cursor-pointer" onClick={() => setTransferTo('SB100004')}>SB100004</span> (Meera)</span>
                   </div>
                 </div>
 
@@ -1257,7 +1281,7 @@ export default function App() {
                   <input 
                     type="text" 
                     value={transferNote} 
-                    onChange={e => setTransferNote(e.target.value)}
+                    onChange={e => setTransferNote(e.target.value)} 
                     placeholder="e.g. Dinner bill split" 
                     className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                   />
@@ -1272,6 +1296,19 @@ export default function App() {
                 </button>
               </form>
             </div>
+
+            {/* QR SCANNER MODAL */}
+            <QRScannerModal
+              isOpen={qrScannerOpen}
+              onClose={() => setQrScannerOpen(false)}
+              onScanSuccess={(scannedAccount) => {
+                setTransferTo(scannedAccount);
+                setFlash({
+                  type: 'success',
+                  message: `Recipient account ${scannedAccount} scanned and populated!`
+                });
+              }}
+            />
           </div>
         )}
 
